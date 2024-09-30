@@ -1,4 +1,5 @@
 let startedAt = 0
+let counter = 0
 
 export default {
   /**
@@ -6,6 +7,12 @@ export default {
    */
   async fetch(request) {
     startedAt ||= Date.now()
+    counter++
+
+    if (request.url.endsWith("favicon.ico")) {
+      return emptyFaviconResponse()
+    }
+
     const uptimeSeconds = Math.round((Date.now() - startedAt) / 1000)
 
     const headers = Object.fromEntries(request.headers)
@@ -13,6 +20,7 @@ export default {
     delete headers["cookie"]
 
     return Response.json({
+      counter,
       startedAt,
       startedAtIso: new Date(startedAt).toISOString(),
       uptimeSeconds,
@@ -24,6 +32,17 @@ export default {
       cf: request.cf
     })
   }
+}
+
+function emptyFaviconResponse() {
+  return new Response(null, {
+    status: 204,
+    statusText: "No Content",
+    headers: {
+      "Content-Type": "image/x-icon",
+      "Cache-Control": "public, max-age=15552000"
+    }
+  })
 }
 
 function extractUrl(url) {
