@@ -8,17 +8,20 @@ export default {
     startedAt ||= Date.now()
     const uptimeSeconds = Math.round((Date.now() - startedAt) / 1000)
 
+    const headers = Object.fromEntries(request.headers)
+    const cookies = headers["cookie"] ? parseCookie(headers["cookie"]) : null
+    delete headers["cookie"]
+
     return Response.json({
       startedAt,
       startedAtIso: new Date(startedAt).toISOString(),
       uptimeSeconds,
       nowIso: new Date().toISOString(),
-      request: {
-        method: request.method,
-        url: extractUrl(request.url),
-        headers: Object.fromEntries(request.headers),
-        cf: request.cf
-      }
+      method: request.method,
+      url: extractUrl(request.url),
+      headers,
+      cookies,
+      cf: request.cf
     })
   }
 }
@@ -31,3 +34,12 @@ function extractUrl(url) {
     search, searchParams: Object.fromEntries(searchParams)
   }
 }
+
+const parseCookie = str =>
+  str
+    .split(';')
+    .map(v => v.split('='))
+    .reduce((acc, v) => {
+      acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
+      return acc
+    }, {})
