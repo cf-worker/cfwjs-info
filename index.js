@@ -1,34 +1,46 @@
 let startedAt = 0
 let counter = 0
+let lastRequestTime = 0
 
 export default {
   /**
    * @param {Request} request
    */
   async fetch(request) {
-    startedAt ||= Date.now()
-    counter++
+    startedAt ||= lastRequestTime = Date.now()
 
     if (request.url.endsWith("favicon.ico")) {
       return emptyFaviconResponse()
     }
 
+    const secondsElapsed = Math.round((Date.now() - lastRequestTime) / 1000)
+    lastRequestTime = Date.now()
+    counter++
     const uptimeSeconds = Math.round((Date.now() - startedAt) / 1000)
-
     const headers = Object.fromEntries(request.headers)
     const cookies = headers["cookie"] ? parseCookie(headers["cookie"]) : null
     delete headers["cookie"]
+    let body = await request.text()
+    if (body.length) {
+      try {
+        body = JSON.parse(body)
+      } catch {
+        body = Object.fromEntries(new URLSearchParams(body))
+      }
+    }
 
     return Response.json({
       counter,
       startedAt,
       startedAtIso: new Date(startedAt).toISOString(),
       uptimeSeconds,
+      secondsElapsed,
       nowIso: new Date().toISOString(),
       method: request.method,
       url: extractUrl(request.url),
       headers,
       cookies,
+      body,
       cf: request.cf
     })
   }
